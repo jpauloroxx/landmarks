@@ -27,17 +27,19 @@ export type ProfileUpdate = Partial<
 >;
 
 /**
- * One of the 63 US national parks. `location` is a PostGIS geography column,
- * which PostgREST returns as a WKB hex string, so read coordinates through the
- * `parks_nearby` RPC rather than the column itself.
+ * A national park in the US or Canada. `location` is a PostGIS geography
+ * column, which PostgREST returns as a WKB hex string, so read coordinates
+ * through the `parks_nearby` RPC rather than the column itself.
  */
 export type Park = {
   id: string;
   slug: string;
   name: string;
   description: string | null;
-  /** Two-letter codes; a few parks span several states. */
+  /** States or provinces; a few parks span several. */
   state_codes: string[];
+  /** 'US' or 'CA'. */
+  country_code: string;
   address: string | null;
   cover_photo_url: string | null;
   created_by: string | null;
@@ -48,7 +50,7 @@ export type Park = {
 /** Return shape of the `parks_nearby` RPC. */
 export type NearbyPark = Pick<
   Park,
-  'id' | 'slug' | 'name' | 'state_codes' | 'cover_photo_url'
+  'id' | 'slug' | 'name' | 'state_codes' | 'country_code' | 'cover_photo_url'
 > & {
   distance_meters: number;
 };
