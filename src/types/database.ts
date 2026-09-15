@@ -5,16 +5,7 @@
  * PostgREST as ISO strings.
  */
 
-export type LandmarkCategory =
-  | 'monument'
-  | 'museum'
-  | 'park'
-  | 'viewpoint'
-  | 'building'
-  | 'natural'
-  | 'other';
-
-export type VisitVisibility = 'public' | 'followers' | 'private';
+export type PostVisibility = 'public' | 'followers' | 'private';
 
 export type Profile = {
   id: string;
@@ -26,7 +17,7 @@ export type Profile = {
   home_city: string | null;
   follower_count: number;
   following_count: number;
-  visit_count: number;
+  post_count: number;
   created_at: string;
   updated_at: string;
 };
@@ -36,57 +27,62 @@ export type ProfileUpdate = Partial<
 >;
 
 /**
- * `location` is a PostGIS geography column. PostgREST returns it as a WKB hex
- * string, so read coordinates through `landmarks_nearby` rather than the
- * column itself.
+ * One of the 63 US national parks. `location` is a PostGIS geography column,
+ * which PostgREST returns as a WKB hex string, so read coordinates through the
+ * `parks_nearby` RPC rather than the column itself.
  */
-export type Landmark = {
+export type Park = {
   id: string;
   slug: string;
   name: string;
   description: string | null;
-  category: LandmarkCategory;
+  /** Two-letter codes; a few parks span several states. */
+  state_codes: string[];
   address: string | null;
-  city: string | null;
-  country_code: string | null;
   cover_photo_url: string | null;
   created_by: string | null;
   is_verified: boolean;
   created_at: string;
 };
 
-/** Return shape of the `landmarks_nearby` RPC. */
-export type NearbyLandmark = Pick<
-  Landmark,
-  'id' | 'slug' | 'name' | 'category' | 'city' | 'cover_photo_url'
+/** Return shape of the `parks_nearby` RPC. */
+export type NearbyPark = Pick<
+  Park,
+  'id' | 'slug' | 'name' | 'state_codes' | 'cover_photo_url'
 > & {
   distance_meters: number;
 };
 
-export type NearbyLandmarksArgs = {
+export type NearbyParksArgs = {
   lat: number;
   lng: number;
   radius_meters?: number;
   max_results?: number;
 };
 
-export type Visit = {
+export type Post = {
   id: string;
   user_id: string;
-  landmark_id: string;
-  visited_at: string;
-  note: string | null;
-  /** Object path inside the `visit-photos` bucket. */
-  photo_url: string | null;
+  park_id: string;
+  taken_at: string;
+  caption: string | null;
+  /** Object path inside the `post-photos` bucket. Every post has a photo. */
+  photo_url: string;
   rating: number | null;
-  visibility: VisitVisibility;
+  visibility: PostVisibility;
   like_count: number;
   comment_count: number;
   created_at: string;
 };
 
-export type VisitInsert = Pick<Visit, 'user_id' | 'landmark_id'> &
-  Partial<Pick<Visit, 'visited_at' | 'note' | 'photo_url' | 'rating' | 'visibility'>>;
+/**
+ * Creating a post. `location` is the exact spot the photo was taken, which can
+ * be far from the park's center pin; omit it to fall back to `parks.location`.
+ */
+export type PostInsert = Pick<Post, 'user_id' | 'park_id' | 'photo_url'> &
+  Partial<Pick<Post, 'taken_at' | 'caption' | 'rating' | 'visibility'>> & {
+    location?: { lat: number; lng: number };
+  };
 
 export type Follow = {
   follower_id: string;
@@ -94,25 +90,25 @@ export type Follow = {
   created_at: string;
 };
 
-export type VisitLike = {
-  visit_id: string;
+export type PostLike = {
+  post_id: string;
   user_id: string;
   created_at: string;
 };
 
-export type VisitComment = {
+export type PostComment = {
   id: string;
-  visit_id: string;
+  post_id: string;
   user_id: string;
   body: string;
   created_at: string;
 };
 
 export type BadgeCriteria =
-  | { type: 'visit_count'; count: number }
-  | { type: 'category_count'; category: LandmarkCategory; count: number }
-  | { type: 'city_count'; city: string; count: number }
-  | { type: 'landmark'; slug: string };
+  | { type: 'post_count'; count: number }
+  | { type: 'park_count'; count: number }
+  | { type: 'state_count'; count: number }
+  | { type: 'park'; slug: string };
 
 export type Badge = {
   id: string;
@@ -131,8 +127,8 @@ export type UserBadge = {
   earned_at: string;
 };
 
-/** A check-in joined with its landmark and author, the shape the feed renders. */
-export type FeedVisit = Visit & {
-  landmark: Landmark;
+/** A post joined with its park and author, the shape the feed renders. */
+export type FeedPost = Post & {
+  park: Park;
   author: Profile;
 };

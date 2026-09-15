@@ -43,7 +43,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "db:push": "supabase db push --include-seed",
+    "db:push": "supabase db push",
     "db:status": "supabase migration list"
   },
   "private": true
